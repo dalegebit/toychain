@@ -12,21 +12,24 @@ class Transaction:
 
 
 class Block:
-    def __init__(self, data, prev_hash=''):
+    def __init__(self, transactions, prev_hash=''):
         self._timestamp = datetime.datetime.now()
-        self._data = data
+        self.transactions = transactions
         self.nouce = 0
         self.prev_hash = prev_hash
         self.hash = self.calc_hash()
 
     def calc_hash(self):
-        str_obj = (str(self._timestamp) + str(self._data) 
+        str_obj = (str(self._timestamp) + str(self.transactions) 
                     + str(self.prev_hash) + str(self.nouce))
         return hashlib.sha256(str_obj.encode()).hexdigest()
     
     def link_prev(self, prev_block):
         self.prev_hash = prev_block.hash
         self.calc_hash()
+    
+    def __repr__(self):
+        return str(self.__dict__)
 
 
 class BlockChain:
@@ -54,10 +57,34 @@ class BlockChain:
         block = Block(self.transactions)
         self.mine_block(block)
 
-    def is_valid(self):
+    def get_balance(self, address):
+        balance = 0
+        for block in self.chain[1:]:
+            for transaction in block.transactions:
+                if address == transaction.to_addr:
+                    balance += transaction.amount
+                if address == transaction.from_addr:
+                    balance -= transaction.amount
+        return balance
+
+    def is_chain_valid(self):
         for prev_block, block in zip(self.chain[:-1], self.chain[1:]):
             if block.hash != block.calc_hash():
                 return False
             if block.prev_hash != prev_block.hash:
                 return False
         return True
+    
+    def is_trans_valid(self, transaction):
+        from_balance = self.get_balance(transaction.from_addr)
+        if from_balance > transaction.amount:
+            return True
+        return False
+
+
+bc = BlockChain()
+t1 = Transaction('f_addr', 't_addr', 10)
+print("This transaction {} is valid? {}".format(str(t1), bc.is_trans_valid(t1)))
+bc.mine_trans()
+print([block for block in bc.chain])
+print("The balance of 'f_addr' is", bc.get_balance('f_addr'))
