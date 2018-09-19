@@ -1,5 +1,6 @@
 import hashlib
 import datetime
+import json
 
 class Transaction:
     def __init__(self, **kargs):
@@ -13,7 +14,7 @@ class Transaction:
 
 class Block:
     def __init__(self, **kargs):
-        self.timestamp = kargs.get('timestamp', datetime.datetime.now())
+        self.timestamp = kargs.get('timestamp', str(datetime.datetime.now()))
         self.transactions = kargs['transactions']
         self.nouce = kargs.get('nouce', 0)
         self.prev_hash = kargs.get('prev_hash', '')
@@ -30,6 +31,14 @@ class Block:
     
     def __repr__(self):
         return str(self.__dict__)
+
+    def to_dict(self):
+        d = self.__dict__
+        d['transactions'] = [trans.__dict__ for trans in self.transactions]
+        return d
+    
+    def jsonify(self):
+        return json.dumps(self.to_dict())
 
 
 class BlockChain:
@@ -84,6 +93,11 @@ class BlockChain:
         if from_balance > transaction.amount:
             return True
         return False
+    
+    def jsonify(self):
+        d = self.__dict__
+        d['chain'] = [block.to_dict() for block in self.chain]
+        return json.dumps(d)
 
 
 bc = BlockChain()
@@ -92,3 +106,4 @@ print("This transaction {} is valid? {}".format(str(t1), bc.is_trans_valid(t1)))
 bc.mine_trans()
 print([block for block in bc.chain])
 print("The balance of 'f_addr' is", bc.get_balance('f_addr'))
+print(bc.jsonify())
