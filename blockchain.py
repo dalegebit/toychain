@@ -2,25 +2,25 @@ import hashlib
 import datetime
 
 class Transaction:
-    def __init__(self, from_addr, to_addr, amount):
-        self.from_addr = from_addr
-        self.to_addr = to_addr
-        self.amount = amount
+    def __init__(self, **kargs):
+        self.from_addr = kargs['from_addr']
+        self.to_addr = kargs['to_addr']
+        self.amount = kargs['amount']
 
     def __repr__(self):
         return str(self.__dict__)
 
 
 class Block:
-    def __init__(self, transactions, prev_hash=''):
-        self._timestamp = datetime.datetime.now()
-        self.transactions = transactions
-        self.nouce = 0
-        self.prev_hash = prev_hash
+    def __init__(self, **kargs):
+        self.timestamp = kargs.get('timestamp', datetime.datetime.now())
+        self.transactions = kargs['transactions']
+        self.nouce = kargs.get('nouce', 0)
+        self.prev_hash = kargs.get('prev_hash', '')
         self.hash = self.calc_hash()
 
     def calc_hash(self):
-        str_obj = (str(self._timestamp) + str(self.transactions) 
+        str_obj = (str(self.timestamp) + str(self.transactions) 
                     + str(self.prev_hash) + str(self.nouce))
         return hashlib.sha256(str_obj.encode()).hexdigest()
     
@@ -40,21 +40,25 @@ class BlockChain:
         if len(self.chain) == 0:
             self.add_gensis()
     
+    @property
+    def last_block(self):
+        return self.chain[-1]
+
     def add_gensis(self):
-        self.chain.append(Block('Genesis', '0'))
+        self.chain.append(Block(transactions=[], prev_hash='0'))
 
     def add_trans(self, transaction):
         self.transactions.append(transaction)
 
     def mine_block(self, block):
-        block.link_prev(self.chain[-1])
+        block.link_prev(self.last_block)
         while block.hash[:self.difficulty] != '0' * self.difficulty:
             block.nouce += 1
             block.hash = block.calc_hash()
         self.chain.append(block)
 
     def mine_trans(self):
-        block = Block(self.transactions)
+        block = Block(transactions=self.transactions)
         self.mine_block(block)
 
     def get_balance(self, address):
@@ -83,7 +87,7 @@ class BlockChain:
 
 
 bc = BlockChain()
-t1 = Transaction('f_addr', 't_addr', 10)
+t1 = Transaction(from_addr='f_addr', to_addr='t_addr', amount=10)
 print("This transaction {} is valid? {}".format(str(t1), bc.is_trans_valid(t1)))
 bc.mine_trans()
 print([block for block in bc.chain])
